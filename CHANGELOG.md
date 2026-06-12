@@ -5,6 +5,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ---
 
+## [1.1.0] - 2026-06-12
+
+### Added
+- Three new sanitised vector diagrams: **Azure Landing Zone hub-spoke topology**, **secure delivery pipeline** ("golden thread"), and an **Azure Well-Architected Framework → DevSecOps mapping**.
+- New **Azure Well-Architected alignment** section with a five-pillar mapping table (Reliability · Security · Cost Optimisation · Operational Excellence · Performance Efficiency).
+- New **Secure delivery pipeline** section describing the commit → PR → GHAS gates → OIDC deploy → monitor flow.
+
+### Changed
+- Enhanced the platform reference-architecture diagram (added Azure Policy + Key Vault; clarified the OIDC + user-assigned-identity deploy path).
+- Expanded the reference-architecture narrative to state the OIDC "no stored cloud secrets" posture and hub reuse across engagements.
+- Noted that all page diagrams render as vector (SVG) and stay crisp at any size.
+
 ## [1.0.0] - 2026-05-06
 
 ### Added

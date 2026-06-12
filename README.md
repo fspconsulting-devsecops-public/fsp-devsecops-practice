@@ -18,6 +18,8 @@
 - [Capability matrix](#capability-matrix)
 - [Operating principles](#operating-principles)
 - [Reference architecture](#reference-architecture)
+- [Secure delivery pipeline](#secure-delivery-pipeline)
+- [Azure Well-Architected alignment](#azure-well-architected-alignment)
 - [Engagement model](#engagement-model)
 - [Certifications](#certifications)
 - [Get in touch](#get-in-touch)
@@ -72,30 +74,122 @@ These six principles govern every engagement — they are non-negotiable:
 
 ## Reference architecture
 
+Our platform pattern pairs **GitHub Enterprise** (source, CI/CD, security, Copilot) with a governed **Microsoft Azure** estate. Code never reaches Azure except through a pipeline, and pipelines authenticate with **short-lived OIDC federation** — no long-lived cloud secrets are stored in GitHub.
+
 ```mermaid
 flowchart LR
     subgraph GH["GitHub Enterprise"]
-        Repo["Application repo<br/>(IaC + app code)"]
-        Actions["GitHub Actions CI/CD"]
-        GHAS["GHAS<br/>CodeQL · Dependabot · Secret Scanning"]
-        Copilot["GitHub Copilot<br/>(IDE + Chat)"]
+        direction TB
+        Repo["Application repo<br/>IaC (Bicep) + app code"]
+        Actions["GitHub Actions<br/>CI/CD pipelines"]
+        GHAS["GitHub Advanced Security<br/>CodeQL · Dependabot · Secret Scanning"]
+        Copilot["GitHub Copilot<br/>IDE + Chat (governed)"]
     end
     subgraph AZ["Microsoft Azure"]
-        ALZ["Azure Landing Zone<br/>(hub-spoke · Bicep)"]
-        Workload["Workload subscription"]
-        Monitor["Azure Monitor + Log Analytics"]
-        Defender["Microsoft Defender for Cloud"]
+        direction TB
+        ALZ["Azure Landing Zone<br/>hub-spoke (Bicep Gold Build)"]
+        Workload["Workload subscription(s)"]
+        Monitor["Azure Monitor<br/>+ Log Analytics"]
+        Defender["Microsoft Defender<br/>for Cloud"]
+        Policy["Azure Policy + Key Vault"]
     end
     Copilot -.assists.-> Repo
-    Repo --> Actions
     GHAS --> Repo
-    Actions -->|"deploy via OIDC + UAMI"| ALZ
+    Repo --> Actions
+    Actions -->|"deploy via OIDC<br/>+ user-assigned identity"| ALZ
     ALZ --> Workload
+    Policy --> Workload
     Workload --> Monitor
     Workload --> Defender
 ```
 
-Every customer engagement follows this reference. Workload-specific patterns (e.g. AI Apps on Azure, Analytics on Azure, SAP on Azure) **extend** it; they do not replace it.
+The Azure side is a standard **hub-spoke Azure Landing Zone**, provisioned from our parameterised Bicep "Gold Build" and reused across every engagement — one governed hub serves multiple client spokes:
+
+```mermaid
+flowchart TB
+    Gov["Management Groups · Azure Policy · RBAC"]
+    subgraph Platform["Platform (hub) subscription"]
+        direction TB
+        Hub["Hub virtual network"]
+        FW["Azure Firewall<br/>/ egress control"]
+        Bastion["Bastion / secure access"]
+        Shared["Shared services<br/>DNS · Key Vault · Log Analytics"]
+    end
+    subgraph Spokes["Landing-zone (spoke) subscriptions"]
+        direction TB
+        Prod["Production spoke VNet"]
+        NonProd["Non-production spoke VNet"]
+    end
+    Gov -.governs.-> Platform
+    Gov -.governs.-> Spokes
+    Hub --- FW
+    Hub --- Bastion
+    Hub --- Shared
+    Hub <-->|"VNet peering"| Prod
+    Hub <-->|"VNet peering"| NonProd
+```
+
+Every customer engagement follows this reference. Workload-specific patterns (e.g. AI Apps on Azure, Analytics on Azure, SAP on Azure) **extend** it; they do not replace it — the same hub, governance, and security gates apply regardless of workload.
+
+> All diagrams on this page are rendered as vector (SVG) by GitHub, so they stay crisp at any zoom or print size.
+
+---
+
+## Secure delivery pipeline
+
+Security is a **gate, not an optional guard-rail**. Every change flows through the same path, and nothing promotes until the automated checks *and* a human reviewer both pass:
+
+```mermaid
+flowchart LR
+    Dev["Developer<br/>+ Copilot"] --> Commit["Commit / branch"]
+    Commit --> PR["Pull request"]
+    subgraph Gates["Automated security gates — GHAS"]
+        direction TB
+        CodeQL["CodeQL (SAST)"]
+        Dep["Dependency review"]
+        Secret["Secret scanning"]
+    end
+    PR --> Gates
+    Gates -->|"pass + human review"| Approve["Required reviewers<br/>+ branch protection"]
+    Approve --> Build["Build + test<br/>(GitHub Actions)"]
+    Build --> Deploy["Deploy via OIDC<br/>(no stored secrets)"]
+    Deploy --> Azure["Azure Landing Zone"]
+    Azure --> Mon["Monitor · alert · DORA metrics"]
+    Mon -.feedback loop.-> Dev
+```
+
+This is the **golden thread** we evidence on every engagement: a commit traces forward to a deployment run ID, and a deployment traces back to the reviewed pull request and the security checks that cleared it.
+
+---
+
+## Azure Well-Architected alignment
+
+We operate to the **Microsoft Azure Well-Architected Framework (WAF)**. DevSecOps is how we *operationalise* the framework — each of the five pillars maps to concrete, evidenced practices rather than aspirations:
+
+```mermaid
+flowchart TB
+    WAF["Azure Well-Architected Framework"]
+    WAF --> R["Reliability"]
+    WAF --> S["Security"]
+    WAF --> C["Cost Optimisation"]
+    WAF --> O["Operational Excellence"]
+    WAF --> P["Performance Efficiency"]
+    R --> R1["IaC reproducibility<br/>automated rollback<br/>DORA change-fail rate"]
+    S --> S1["GHAS: CodeQL · secret ·<br/>dependency scanning<br/>OIDC deploy · least-privilege<br/>RBAC · Defender for Cloud"]
+    C --> C1["FinOps baseline<br/>Azure Advisor<br/>tagging + right-sizing"]
+    O --> O1["Everything-as-Code<br/>CI/CD pipelines<br/>Monitor + Log Analytics<br/>runbooks · DORA"]
+    P --> P1["Right-sized SKUs<br/>autoscale<br/>performance baselines"]
+```
+
+| WAF pillar | How our DevSecOps practice delivers it |
+|---|---|
+| **Reliability** | Reproducible IaC, automated rollback paths, environment parity, and DORA change-failure-rate tracking. |
+| **Security** | GHAS (CodeQL, secret scanning, dependency review) in CI, OIDC federated deployment with no stored secrets, least-privilege RBAC, and Microsoft Defender for Cloud. |
+| **Cost Optimisation** | FinOps baseline at assessment, Azure Advisor reviews, resource tagging, and right-sizing as a continuous cadence. |
+| **Operational Excellence** | Everything-as-Code, pipeline-driven change, Azure Monitor + Log Analytics observability, runbooks, and DORA metrics. |
+| **Performance Efficiency** | Right-sized SKUs, autoscale where appropriate, and performance baselines validated before promotion. |
+
+A **Well-Architected Review** is part of our Design phase and revisited on an **Optimise** cadence — so alignment is checked, not assumed.
 
 ---
 
