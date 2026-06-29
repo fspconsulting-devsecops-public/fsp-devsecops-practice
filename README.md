@@ -1,6 +1,6 @@
 # FSP — DevSecOps Practice
 
-> **Agentic DevOps with Microsoft Azure and GitHub.** Repeatable, secure, evidence-first software delivery — by Foundation Specialist Partner (FSP).
+> **Agentic DevOps with Microsoft Azure and GitHub.** Repeatable, secure, evidence-first software delivery.
 
 [![Microsoft Solutions Partner](https://img.shields.io/badge/Microsoft-Solutions%20Partner-0078D4?logo=microsoft&logoColor=white)](https://partner.microsoft.com/)
 [![Specialisation: Agentic DevOps](https://img.shields.io/badge/Azure%20Specialisation-Agentic%20DevOps%20(v2.6)-0078D4)](https://partner.microsoft.com/)
