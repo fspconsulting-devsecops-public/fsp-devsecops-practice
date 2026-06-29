@@ -201,8 +201,6 @@ We engage in three shapes:
 - 🟡 **Greyfield** — existing Azure estate with maturity gaps; uplifted in-place using the same Gold Build patterns.
 - 🔵 **Migration** — Azure DevOps to GitHub (or hybrid), guided by a defined enablement plan.
 
-Every engagement starts with a **one-day assessment workshop** and produces a written readiness plan **before any code is written**.
-
 ---
 
 ## Certifications
