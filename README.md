@@ -225,4 +225,4 @@ For an engagement enquiry, capability deck, or a copy of the FSP DevSecOps Pract
 
 ---
 
-<sub>© Foundation Specialist Partner (FSP) · Microsoft Solutions Partner · Pursuing the Azure Specialisation in Agentic DevOps with Microsoft Azure and GitHub (v2.6) · Content licensed under [Apache 2.0](LICENSE)</sub>
+<sub>Content licensed under [Apache 2.0](LICENSE)</sub>
